@@ -2899,6 +2899,30 @@ contains
 #endif
     endif ! minMaxOpt
 
+    ! Now handle _std, if requested.
+    if (dataEntry%stdOpt.gt.0) then
+       call LIS_verify(nf90_def_var(ftn, &
+            trim(dataEntry%short_name)//"_std", &
+            nf90_float, &
+            dimids = dimID(start:end), &
+            varID=dataEntry%varId_std), &
+            'nf90_def_var for ' // &
+            trim(dataEntry%short_name) // "_std" // &
+            'failed in defineNETCDFheadervar')
+#if(defined USE_NETCDF4)
+       call LIS_verify(nf90_def_var_fill(ftn, &
+            dataEntry%varId_std, &
+            1, fill_value), 'nf90_def_var_fill failed for '// &
+            trim(dataEntry%short_name)//"_std")
+       call LIS_verify(nf90_def_var_deflate(ftn, &
+            dataEntry%varId_std, &
+            shuffle, deflate, deflate_level), &
+            'nf90_def_var_deflate for '// &
+            trim(dataEntry%short_name)//"_std" // &
+            'failed in defineNETCDFheadervar')
+#endif
+    endif ! stdOpt
+
     ! Now add attributes
     call LIS_verify(nf90_put_att(ftn,dataEntry%varId_def, &
          "units", trim(dataEntry%units)), &
@@ -3021,6 +3045,39 @@ contains
             'nf90_put_att for vmax failed in defineNETCDFheaderVar')
     endif
 
+    ! Add metadata for std variables
+    if (dataEntry%stdOpt.gt.0) then
+
+       ! Min metadata
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "units", trim(dataEntry%units)), &
+            'nf90_put_att for units failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "standard_name", trim(dataEntry%standard_name)), &
+            'nf90_put_att for standard_name failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "long_name", trim(dataEntry%long_name)), &
+            'nf90_put_att for long_name failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn,dataEntry%varId_std, &
+            "scale_factor", 1.0), &
+            'nf90_put_att for scale_factor failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "add_offset", 0.0), &
+            'nf90_put_att for add_offset failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "missing_value", LIS_rc%udef), &
+            'nf90_put_att for missing_value failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "_FillValue", LIS_rc%udef), &
+            'nf90_put_att for _FillValue failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "vmin", dataEntry%valid_min), &
+            'nf90_put_att for vmin failed in defineNETCDFheaderVar')
+       call LIS_verify(nf90_put_att(ftn, dataEntry%varId_std, &
+            "vmax", dataEntry%valid_max), &
+            'nf90_put_att for vmax failed in defineNETCDFheaderVar')
+    endif
+
 #endif
   end subroutine defineNETCDFheaderVar
 
@@ -3060,7 +3117,7 @@ contains
 !     writes a variable into a netcdf formatted file. 
 !   \end{description}
 !EOP    
-    integer       :: i,k,m,t
+    integer       :: k,m,t
     integer       :: nmodel_status
 
     nmodel_status = 0
@@ -3138,7 +3195,15 @@ contains
                   trim(dataEntry%short_name)//'_max ('//&
                   trim(dataEntry%units)//')',&
                   dataEntry%form,nmodel_status,dim1=k)
-             
+          endif
+          ! Instantaneous stdev
+          if( dataEntry%stdOpt.ne.0) then 
+             call LIS_writevar_netcdf(ftn,ftn_stats, n,&
+                  dataEntry%std(:,k),&
+                  dataEntry%varId_std, &
+                  trim(dataEntry%short_name)//'_std ('//&
+                  trim(dataEntry%units)//')',&
+                  dataEntry%form,nmodel_status,dim1=k)
           endif
        enddo
     endif
@@ -7848,7 +7913,7 @@ end subroutine writevar_grib2_withstats_real
 ! \label{LIS_writevar_spread}
 !
 ! !INTERFACE:
-  subroutine LIS_writevar_spread(ftn, n, m, varid, var,v)
+  subroutine LIS_writevar_spread(ftn, n, m, varid, var,v, ensemstype)
 ! !USES:
     implicit none
 ! !ARGUMENTS: 
@@ -7858,6 +7923,7 @@ end subroutine writevar_grib2_withstats_real
     integer, intent(in) :: varid
     real, intent(in)    :: var(LIS_rc%npatch(n,LIS_rc%lsm_index))
     integer, intent(in) :: v
+    character(len=*), intent(in) :: ensemstype
 !
 ! !DESCRIPTION:
 !  Writes the innovations to a binary file in a gridded format. 
@@ -7911,43 +7977,46 @@ end subroutine writevar_grib2_withstats_real
                         c.ge.LIS_ews_ind(n,l).and.&
                         c.le.LIS_ewe_ind(n,l))then !points not in halo
 
-#if 0 
-                      mean_v = 0 
-                      var_v  = 0 
+                     if(ensemstype.eq."std") then     
+                        mean_v = 0 
+                        var_v  = 0 
 
-                      do t=1,npatch
-                         mean_v = mean_v + gtmp1(count1)
-                         var_v  = var_v + gtmp1(count1)*gtmp1(count1)
-                         count1 = count1 + 1
-                      enddo
-                      if(npatch.gt.0) then 
-                         mean_v = mean_v/npatch
-                         std_v  = (var_v/npatch - mean_v*mean_v)
-                         if(std_v.ge.0) then 
-                            std_v = sqrt(std_v)
-                         else
-                            std_v = LIS_rc%udef
-                         endif
-                      else
-                         std_v = LIS_rc%udef
-                      endif
-                      gtmp(c,r) = std_v
-#endif
-!#if 0 
+                        do t=1,npatch
+                           mean_v = mean_v + gtmp1(count1)
+                           var_v  = var_v + gtmp1(count1)*gtmp1(count1)
+                           count1 = count1 + 1
+                        enddo
+                        if(npatch.gt.0) then 
+                           mean_v = mean_v/npatch
+                           std_v  = max(0.0,(var_v/npatch - mean_v*mean_v))
+                           if(std_v.ge.0) then 
+                              std_v = sqrt(std_v)
+                           else
+                              std_v = LIS_rc%udef
+                           endif
+                        else
+                           std_v = LIS_rc%udef
+                        endif
+                        gtmp(c,r) = std_v
 
-                      min_v = 1000000
-                      max_v = -1000000 
-                      do t=1,npatch
-                         if(gtmp1(count1).lt.min_v) min_v = gtmp1(count1)
-                         if(gtmp1(count1).gt.max_v) max_v = gtmp1(count1)
-                         count1 = count1 + 1
-                      enddo                      
-                      gtmp(c,r) = max_v - min_v
-                      if(min_v.eq. 1000000.or.&
-                           max_v.eq.-1000000 ) then 
-                         gtmp(c,r) = LIS_rc%udef
-                      endif
-!#endif                      
+                     elseif(ensemstype.eq."max-min") then
+                        min_v = 1000000
+                        max_v = -1000000 
+                        do t=1,npatch
+                           if(gtmp1(count1).lt.min_v) min_v = gtmp1(count1)
+                           if(gtmp1(count1).gt.max_v) max_v = gtmp1(count1)
+                           count1 = count1 + 1
+                        enddo                      
+                        gtmp(c,r) = max_v - min_v
+                        if(min_v.eq. 1000000.or.&
+                              max_v.eq.-1000000 ) then 
+                           gtmp(c,r) = LIS_rc%udef
+                        endif
+
+                     else
+                        write(LIS_logunit,*) '[ERR] Define ensemble spread type as "std" or as "max-min"'       
+                        call LIS_endrun() 
+                     endif    
                    else
                       count1 = count1 + npatch
                    endif
