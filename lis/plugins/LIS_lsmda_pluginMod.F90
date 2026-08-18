@@ -505,6 +505,7 @@ subroutine LIS_lsmda_plugin
    external NoahMP401_scale_snow
    external NoahMP401_descale_snow
    external NoahMP401_updatesnowvars
+   external NoahMP401_setsnowsimplevars
 
    external noahmp401_getvegvars
    external noahmp401_setvegvars
@@ -2863,6 +2864,28 @@ subroutine LIS_lsmda_plugin
         trim(LIS_synsndId)//char(0),noahmp401_updatesnowvars)
    call registerlsmdaqcobsstate(trim(LIS_noahmp401Id)//"+"//&
         trim(LIS_synsndId)//char(0),noahmp401_qc_snowobs)
+
+! NoahMP-4.0.1 ML snow depth DA Dunmire Aug. 18 2026
+call registerlsmdainit(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_dasnow_init)
+call registerlsmdagetstatevar(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_getsnowvars)
+call registerlsmdasetstatevar(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_setsnowsimplevars)
+call registerlsmdagetobspred(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_getsnowpred)
+call registerlsmdaqcstate(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_qcsnow)
+call registerlsmdaqcobsstate(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_qc_snowobs)
+call registerlsmdascalestatevar(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_scale_snow)
+call registerlsmdadescalestatevar(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_descale_snow)
+call registerlsmdaupdatestate(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_updatesnowvars)
+call registerlsmdaqcobsstate(trim(LIS_noahmp401Id)//"+"//&
+        trim(LIS_ML_SNWD_obsId)//char(0),noahmp401_qc_snowobs)
 
 ! NoahMP-4.0.1 ESACCI soil moisture !2022.06.29 Pang
    call registerlsmdainit(trim(LIS_noahmp401Id)//"+"//&
