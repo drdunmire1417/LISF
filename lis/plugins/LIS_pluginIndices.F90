@@ -288,6 +288,7 @@ module LIS_pluginIndices
    character*50, public,  parameter :: LIS_snodepobsId         = "SNODEP"
    character*50, public,  parameter :: LIS_usafsiobsId         = "USAFSI"
    character*50, public,  parameter :: LIS_snipobsId         = "SNIP"
+   character*50, public,  parameter :: LIS_ML_SNWD_obsId       = "ML snow depth"
    character*50, public,  parameter :: LIS_ANSASWEsnowobsId    = &
         "ANSA SWE"
    character*50, public,  parameter :: LIS_ANSASCFsnowobsId    = &
