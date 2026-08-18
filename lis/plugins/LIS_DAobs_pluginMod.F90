@@ -221,6 +221,10 @@ subroutine LIS_DAobs_plugin
    use SMMRSNWDsnow_Mod,        only : SMMRSNWDsnow_setup
 #endif
 
+#if ( defined DA_OBS_ML_SNWD )                                                                     
+   use ML_SNWD_Mod,             only : ML_SNWD_setup                                                    
+#endif
+
 #if ( defined DA_OBS_SSMI_SNWD )
    use SSMISNWDsnow_Mod,        only : SSMISNWDsnow_setup
 #endif
@@ -423,6 +427,10 @@ subroutine LIS_DAobs_plugin
    external read_SSMISNWDsnow, write_SSMISNWDsnowobs
 #endif
 
+#if ( defined DA_OBS_ML_SNWD )
+   external read_ML_SNWD, write_ML_SNWDobs
+#endif
+
 #if ( defined DA_OBS_ANSA_SNWD )
    external read_ANSASNWDsnow, write_ANSASNWDsnowobs
 #endif
@@ -621,6 +629,16 @@ subroutine LIS_DAobs_plugin
    call registerdaobssetup(trim(LIS_NASA_AMSREsmobsId)//char(0),NASA_AMSREsm_setup)
    call registerreaddaobs(trim(LIS_NASA_AMSREsmobsId)//char(0),read_NASA_AMSREsm)
    call registerwritedaobs(trim(LIS_NASA_AMSREsmobsId)//char(0),write_NASA_AMSREsmobs)
+#endif
+
+#if ( defined DA_OBS_ML_SNWD )
+   call registerdaobsclass(trim(LIS_ML_SNWD_obsId),"LSM") 
+   call registerdaobssetup(trim(LIS_ML_SNWD_obsId)//char(0), &
+           ML_SNWD_setup)
+   call registerreaddaobs(trim(LIS_ML_SNWD_obsId)//char(0),  &
+           read_ML_SNWD)
+   call registerwritedaobs(trim(LIS_ML_SNWD_obsId)//char(0), &
+           write_ML_SNWDobs)
 #endif
 
 #if ( defined DA_OBS_LPRM_AMSRESM )
