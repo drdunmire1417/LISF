@@ -576,6 +576,14 @@ module LIS_PRIV_rcMod
 !  Number of perturbation
 !  \item[ensemstype]
 !  flag to specify whether to output max-min or std ensemble spread
+!  \item[obsperttype]
+!  flag for state dependent observation error
+!  \item[relobserror]
+!  relative error value for state dependent observation error
+!  \item[obsminerror]
+!  constant error is assumed below minimum value
+!  \item[obsmaxerror]
+!  constant error is assumed above maximum value
 !  \item[wensems]
 !  flag to specify if ensemble members are to be output
 !  \item[wobs]
@@ -918,6 +926,10 @@ module LIS_PRIV_rcMod
 
      integer                :: nforcepert
      character*50, allocatable :: ensemstype(:)
+     character*50, allocatable :: obsperttype(:)
+     real, allocatable :: relobserror(:)
+     real, allocatable :: obsminerror(:)
+     real, allocatable :: obsmaxerror(:)
      integer, allocatable   :: wensems(:)
      integer, allocatable   :: wobs(:)
      integer, allocatable   :: winnov(:)
