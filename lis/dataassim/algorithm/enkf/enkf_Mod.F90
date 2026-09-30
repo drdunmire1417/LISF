@@ -1474,8 +1474,21 @@ contains
        value(count1: count1+(counts-1))  = value1(:)          
        gid(count1:count1+(counts-1))     = gid1(:)       
        pertyp(count1:count1+(counts-1))  = pert_type
-       if(pert_type.eq.0) then 
-          std(count1:count1+(counts-1))     = obsstd(:)
+       if(pert_type.eq.0) then
+              if(trim(LIS_rc%obsperttype(k)).eq.'state-dependent') then
+                     do g = count1,count1+(counts-1)
+                        if(value1(g).ne.-9999.0) then
+                            std(g) = obsstd(g)*value1(g)
+                            if(std(g).lt.LIS_rc%obsminerror(k)) std(g) = LIS_rc%obsminerror(k)
+                            if(std(g).gt.LIS_rc%obsmaxerror(k)) std(g) = LIS_rc%obsmaxerror(k)
+                        else
+                            std(g) = -9999.0
+                        endif
+                     enddo
+              else
+                     std(count1:count1+(counts-1))     = obsstd(:)
+              endif
+                     
        elseif(pert_type.eq.1) then 
           do g = count1,count1+(counts-1)
              if(value1(g).ne.-9999.0) then 
@@ -1514,6 +1527,16 @@ contains
        Observations(t)%value = value(t)
        Observations(t)%std = std(t)
        Observations(t)%pert_type = pertyp(t)
+       
+       if(trim(LIS_rc%obsperttype(k)).eq.'state-dependent') then 
+            Observations(t)%state_dep = .true.
+            Observations(t)%relerror = LIS_rc%relobserror(k)
+       else
+            Observations(t)%state_dep = .false.
+            Observations(t)%relerror = -999.0
+       endif
+
+
        if(assimflag(t).eq.1) then 
           Observations(t)%assim = .true.
        else

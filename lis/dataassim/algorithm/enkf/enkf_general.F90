@@ -184,7 +184,13 @@ contains
        ! compute right hand side rhs = Zpert - H*y^f for system equation,
        
        do i=1,N_obs
-          rhs(i) = Observations(i)%value + Obs_err(i,n_e) - Obs_pred(i,n_e)
+          if(Observations(i)%state_dep) then
+              rhs(i) = Observations(i)%value + (Observations(i)%std/Observations(i)%relerror)*Obs_err(i,n_e) - Obs_pred(i,n_e)
+          else
+              rhs(i) = Observations(i)%value + Obs_err(i,n_e) - Obs_pred(i,n_e)
+          endif
+
+          !rhs(i) = Observations(i)%value + Obs_err(i,n_e) - Obs_pred(i,n_e)
        end do
 
        ! solve W*b = Zpert - H*y^f

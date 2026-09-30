@@ -47,6 +47,8 @@ module enkf_types
      real             :: lat       ! latitude
      real             :: value     ! value of measurement
      real             :: std       ! obs error std
+     logical          :: state_dep ! .T. if state-dependent error, .F. otherwise
+     real             :: relerror  ! = value set in config file if state-dependent error, otherwise = -999
      logical          :: assim     ! .T. if assimilated, .F. if innov only
      integer          :: pert_type ! 0- additive, 1-multiplicative
   end type obs_type
